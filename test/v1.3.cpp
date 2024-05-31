@@ -40,8 +40,6 @@ void ResetButton_ISR() {
     // Reset timer if the button is pressed
     if (digitalRead(TimerResetButtonPin) == HIGH) {
         TimerInfo_volatile.State = TIMER_STATE_IDLE;
-        TimerInfo_volatile.StartTime_ms = 0;
-        TimerInfo_volatile.EndTime_ms = 0;
     }
 }
 
