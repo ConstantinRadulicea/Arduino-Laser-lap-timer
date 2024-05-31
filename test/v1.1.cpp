@@ -18,7 +18,6 @@ volatile static TimerInfo_t TimerInfo_volatile = {};
 static TimerInfo_t TimerInfo_temp = {};
 
 int LaserSensorTriggerPin = 2;
-int TimerResetButtonPin = 3;
 
 void LaserSensor_ISR() {
     int LaserSensorValue = digitalRead(LaserSensorTriggerPin);
@@ -36,19 +35,11 @@ void LaserSensor_ISR() {
     }
 }
 
-void ResetButton_ISR() {
-    // Reset timer if the button is pressed
-    if (digitalRead(TimerResetButtonPin) == HIGH) {
-        TimerInfo_volatile.State = TIMER_STATE_IDLE;
-    }
-}
 
 void setup() {
     pinMode(LaserSensorTriggerPin, INPUT);
-    pinMode(TimerResetButtonPin, INPUT_PULLUP); // Internal pull-up resistor
     Serial.begin(9600);
     attachInterrupt(digitalPinToInterrupt(LaserSensorTriggerPin), LaserSensor_ISR, LASER_SENSOR_INTERRUPT_TYPE);
-    attachInterrupt(digitalPinToInterrupt(TimerResetButtonPin), ResetButton_ISR, RISING);
 }
 
 void loop() {
@@ -70,6 +61,11 @@ void loop() {
         case TIMER_STATE_DONE:
             Serial.print("State: Done, Duration: ");
             Serial.println(((float)(TimerInfo_temp.EndTime_ms - TimerInfo_temp.StartTime_ms)) / 1000.0f, 3);
+
+            // Reset timer for the next measurement
+            ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
+                TimerInfo_volatile.State = TIMER_STATE_IDLE; // Transition to Idle state
+            }
             break;
         default:
             Serial.println("Unknown state");
