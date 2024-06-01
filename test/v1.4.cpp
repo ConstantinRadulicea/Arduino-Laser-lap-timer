@@ -3,7 +3,7 @@
 
 #define ISR_STATUS_TRIGGERED 1
 #define LASER_SENSOR_INTERRUPT_TYPE CHANGE
-#define LASER_SENSOR_INTERRUPT_DEBOUNCE_TIME_MS 50
+#define LASER_SENSOR_INTERRUPT_DEBOUNCE_TIME_MS 500
 #define TIMER_STATE_IDLE 0
 #define TIMER_STATE_TIMING 1
 #define TIMER_STATE_DONE 2
@@ -24,47 +24,24 @@ void LaserSensor_ISR() {
     int LaserSensorValue = digitalRead(LaserSensorTriggerPin);
     unsigned long currentMillis = millis();
 
-    static unsigned long lastInterruptTime = 0;
-
-    if ((currentMillis - lastInterruptTime) > LASER_SENSOR_INTERRUPT_DEBOUNCE_TIME_MS) {
-        lastInterruptTime = currentMillis;
-
-        switch (TimerInfo_volatile.State) {
-            case TIMER_STATE_IDLE:
-                if (LaserSensorValue == HIGH) {
-                    TimerInfo_volatile.State = TIMER_STATE_TIMING; // Transition to Timing state
-                    TimerInfo_volatile.StartTime_ms = currentMillis;
-                }
-                break;
-                
-            case TIMER_STATE_TIMING:
-                if (LaserSensorValue == HIGH) {
-                    TimerInfo_volatile.State = TIMER_STATE_DONE; // Transition to Done state
-                    TimerInfo_volatile.EndTime_ms = currentMillis;
-                }
-                break;
-                
-            case TIMER_STATE_DONE:
-                // Do nothing, wait for reset
-                break;
+    if (TimerInfo_volatile.State == TIMER_STATE_IDLE && LaserSensorValue == HIGH) {
+        TimerInfo_volatile.State = TIMER_STATE_TIMING; // Transition to Timing state
+        TimerInfo_volatile.StartTime_ms = currentMillis;
+    }
+    else if (TimerInfo_volatile.State == TIMER_STATE_TIMING && LaserSensorValue == HIGH) {
+        if ((currentMillis - TimerInfo_volatile.StartTime_ms) > LASER_SENSOR_INTERRUPT_DEBOUNCE_TIME_MS) {
+            TimerInfo_volatile.State = TIMER_STATE_DONE; // Transition to Done state
+            TimerInfo_volatile.EndTime_ms = currentMillis;
         }
     }
 }
 
 void ResetButton_ISR() {
-    static unsigned long lastButtonPressTime = 0;
-    unsigned long currentMillis = millis();
-
-    // Debounce the reset button
-    if ((currentMillis - lastButtonPressTime) > LASER_SENSOR_INTERRUPT_DEBOUNCE_TIME_MS) {
-        lastButtonPressTime = currentMillis;
-        
-        // Reset timer if the button is pressed
-        if (digitalRead(TimerResetButtonPin) == LOW) {
-            TimerInfo_volatile.State = TIMER_STATE_IDLE;
-            TimerInfo_volatile.StartTime_ms = 0;
-            TimerInfo_volatile.EndTime_ms = 0;
-        }
+    // Reset timer if the button is pressed
+    if (digitalRead(TimerResetButtonPin) == HIGH) {
+        TimerInfo_volatile.State = TIMER_STATE_IDLE;
+        TimerInfo_volatile.StartTime_ms = 0;
+        TimerInfo_volatile.EndTime_ms = 0;
     }
 }
 
