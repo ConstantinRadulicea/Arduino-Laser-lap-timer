@@ -25,8 +25,6 @@
 #define TIMER_STATE_TIMING 1
 #define TIMER_STATE_DONE 2
 
-LiquidCrystal_I2C lcd(0x27, 16, 2);
-
 typedef struct TimerInfo_s {
     unsigned int State; // States: 0 - Idle, 1 - Timing, 2 - Done
     unsigned long StartTime_ms;
@@ -35,9 +33,9 @@ typedef struct TimerInfo_s {
 
 volatile static TimerInfo_t TimerInfo_volatile = {};
 static TimerInfo_t TimerInfo_temp = {};
-
 int LaserSensorTriggerPin = 2;
 int TimerResetButtonPin = 3;
+LiquidCrystal_I2C lcd(0x27, 16, 2);
 
 void LaserSensor_ISR() {
     int LaserSensorValue = digitalRead(LaserSensorTriggerPin);
