@@ -18,27 +18,28 @@
 #include <util/atomic.h>
 #include <LiquidCrystal_I2C.h>
 
-#define ISR_STATUS_TRIGGERED 1
 #define LASER_SENSOR_INTERRUPT_TYPE CHANGE
 #define LASER_SENSOR_INTERRUPT_DEBOUNCE_TIME_MS 50
 #define TIMER_STATE_IDLE 0
 #define TIMER_STATE_TIMING 1
 #define TIMER_STATE_DONE 2
+#define LCD_MAX_FPS 10
+
+#define LASER_SENSOR_TRIGGER_PIN 2
+#define TIMER_RESET_BUTTON_PIN 3
 
 typedef struct TimerInfo_s {
-    unsigned int State; // States: 0 - Idle, 1 - Timing, 2 - Done
+    uint8_t State; // States: 0 - Idle, 1 - Timing, 2 - Done
     unsigned long StartTime_ms;
     unsigned long EndTime_ms;
 } TimerInfo_t;
 
 volatile static TimerInfo_t TimerInfo_volatile = {};
 static TimerInfo_t TimerInfo_temp = {};
-int LaserSensorTriggerPin = 2;
-int TimerResetButtonPin = 3;
 LiquidCrystal_I2C lcd(0x27, 16, 2);
 
 void LaserSensor_ISR() {
-    int LaserSensorValue = digitalRead(LaserSensorTriggerPin);
+    int LaserSensorValue = digitalRead(LASER_SENSOR_TRIGGER_PIN);
     unsigned long currentMillis = millis();
 
     static unsigned long lastInterruptTime = 0;
@@ -77,7 +78,7 @@ void ResetButton_ISR() {
         lastButtonPressTime = currentMillis;
         
         // Reset timer if the button is pressed
-        if (digitalRead(TimerResetButtonPin) == LOW) {
+        if (digitalRead(TIMER_RESET_BUTTON_PIN) == LOW) {
             TimerInfo_volatile.State = TIMER_STATE_IDLE;
             TimerInfo_volatile.StartTime_ms = 0;
             TimerInfo_volatile.EndTime_ms = 0;
@@ -86,17 +87,17 @@ void ResetButton_ISR() {
 }
 
 void setup() {
-    pinMode(LaserSensorTriggerPin, INPUT);
-    pinMode(TimerResetButtonPin, INPUT_PULLUP); // Internal pull-up resistor
+    pinMode(LASER_SENSOR_TRIGGER_PIN, INPUT);
+    pinMode(TIMER_RESET_BUTTON_PIN, INPUT_PULLUP); // Internal pull-up resistor
     Serial.begin(9600);
-    attachInterrupt(digitalPinToInterrupt(LaserSensorTriggerPin), LaserSensor_ISR, LASER_SENSOR_INTERRUPT_TYPE);
-    attachInterrupt(digitalPinToInterrupt(TimerResetButtonPin), ResetButton_ISR, RISING);
+    attachInterrupt(digitalPinToInterrupt(LASER_SENSOR_TRIGGER_PIN), LaserSensor_ISR, LASER_SENSOR_INTERRUPT_TYPE);
+    attachInterrupt(digitalPinToInterrupt(TIMER_RESET_BUTTON_PIN), ResetButton_ISR, RISING);
     lcd.init();  //display initialization
     lcd.backlight();  // activate the backlight
 }
 
 
-float SecondsPassed = 0;
+float SecondsPassed = 0.0f;
 
 void loop() {
     // Access the volatile struct atomically
@@ -138,5 +139,5 @@ void loop() {
             break;
     }
 
-    delay(100); // Adjust delay as necessary
+    delay((unsigned long)(1000.0f / (float)LCD_MAX_FPS)); // Adjust delay as necessary
 }
