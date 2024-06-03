@@ -19,7 +19,9 @@
 #include <LiquidCrystal_I2C.h>
 
 #define LASER_SENSOR_INTERRUPT_TYPE CHANGE
+#define RESET_BUTTON_INTERRUPT_TYPE CHANGE
 #define LASER_SENSOR_INTERRUPT_DEBOUNCE_TIME_MS 1000
+#define RESET_BUTTON_INTERRUPT_DEBOUNCE_TIME_MS 50
 #define TIMER_STATE_IDLE 0
 #define TIMER_STATE_TIMING 1
 #define TIMER_STATE_DONE 2
@@ -74,7 +76,7 @@ void ResetButton_ISR() {
     unsigned long currentMillis = millis();
 
     // Debounce the reset button
-    if ((currentMillis - lastButtonPressTime) > LASER_SENSOR_INTERRUPT_DEBOUNCE_TIME_MS) {
+    if ((currentMillis - lastButtonPressTime) > RESET_BUTTON_INTERRUPT_DEBOUNCE_TIME_MS) {
         lastButtonPressTime = currentMillis;
         
         // Reset timer if the button is pressed
@@ -91,7 +93,7 @@ void setup() {
     pinMode(TIMER_RESET_BUTTON_PIN, INPUT_PULLUP); // Internal pull-up resistor
     //Serial.begin(9600);
     attachInterrupt(digitalPinToInterrupt(LASER_SENSOR_TRIGGER_PIN), LaserSensor_ISR, LASER_SENSOR_INTERRUPT_TYPE);
-    attachInterrupt(digitalPinToInterrupt(TIMER_RESET_BUTTON_PIN), ResetButton_ISR, RISING);
+    attachInterrupt(digitalPinToInterrupt(TIMER_RESET_BUTTON_PIN), ResetButton_ISR, RESET_BUTTON_INTERRUPT_TYPE);
     lcd.init();  //display initialization
     lcd.backlight();  // activate the backlight
 }
