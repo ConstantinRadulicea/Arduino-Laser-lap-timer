@@ -19,7 +19,7 @@
 #include <LiquidCrystal_I2C.h>
 
 #define LASER_SENSOR_INTERRUPT_TYPE CHANGE
-#define LASER_SENSOR_INTERRUPT_DEBOUNCE_TIME_MS 50
+#define LASER_SENSOR_INTERRUPT_DEBOUNCE_TIME_MS 1000
 #define TIMER_STATE_IDLE 0
 #define TIMER_STATE_TIMING 1
 #define TIMER_STATE_DONE 2
@@ -36,7 +36,7 @@ typedef struct TimerInfo_s {
 
 volatile static TimerInfo_t TimerInfo_volatile = {};
 static TimerInfo_t TimerInfo_temp = {};
-LiquidCrystal_I2C lcd(0x27, 16, 2);
+LiquidCrystal_I2C lcd(0x3F, 16, 2); //0x27
 
 void LaserSensor_ISR() {
     int LaserSensorValue = digitalRead(LASER_SENSOR_TRIGGER_PIN);
@@ -78,7 +78,7 @@ void ResetButton_ISR() {
         lastButtonPressTime = currentMillis;
         
         // Reset timer if the button is pressed
-        if (digitalRead(TIMER_RESET_BUTTON_PIN) == LOW) {
+        if (digitalRead(TIMER_RESET_BUTTON_PIN) == HIGH) {
             TimerInfo_volatile.State = TIMER_STATE_IDLE;
             TimerInfo_volatile.StartTime_ms = 0;
             TimerInfo_volatile.EndTime_ms = 0;
@@ -89,7 +89,7 @@ void ResetButton_ISR() {
 void setup() {
     pinMode(LASER_SENSOR_TRIGGER_PIN, INPUT);
     pinMode(TIMER_RESET_BUTTON_PIN, INPUT_PULLUP); // Internal pull-up resistor
-    Serial.begin(9600);
+    //Serial.begin(9600);
     attachInterrupt(digitalPinToInterrupt(LASER_SENSOR_TRIGGER_PIN), LaserSensor_ISR, LASER_SENSOR_INTERRUPT_TYPE);
     attachInterrupt(digitalPinToInterrupt(TIMER_RESET_BUTTON_PIN), ResetButton_ISR, RISING);
     lcd.init();  //display initialization
@@ -109,14 +109,14 @@ void loop() {
     lcd.clear();
     switch (TimerInfo_temp.State) {
         case TIMER_STATE_IDLE:
-            Serial.println("State: Idle");
+            //Serial.println("State: Idle");
             lcd.setCursor(0, 0);
             lcd.print("Idle");
             break;
         case TIMER_STATE_TIMING:
             SecondsPassed = ((float)(millis() - TimerInfo_temp.StartTime_ms)) / 1000.0f;
-            Serial.print("State: Timing, Elapsed Time: ");
-            Serial.println(SecondsPassed, 3);
+            //Serial.print("State: Timing, Elapsed Time: ");
+            //Serial.println(SecondsPassed, 3);
 
             lcd.setCursor(0, 0);
             lcd.print("Timing [s]");
@@ -125,15 +125,15 @@ void loop() {
             break;
         case TIMER_STATE_DONE:
             SecondsPassed = ((float)(TimerInfo_temp.EndTime_ms - TimerInfo_temp.StartTime_ms)) / 1000.0f;
-            Serial.print("State: Done, Duration: ");
-            Serial.println(SecondsPassed, 3);
+            //Serial.print("State: Done, Duration: ");
+            //Serial.println(SecondsPassed, 3);
             lcd.setCursor(0, 0);
             lcd.print("Done [s]");
             lcd.setCursor(0, 1);
             lcd.print(SecondsPassed, 3);
             break;
         default:
-            Serial.println("Unknown state");
+            //Serial.println("Unknown state");
             lcd.setCursor(0, 0);
             lcd.print("Unknown state");
             break;
